@@ -1,0 +1,22 @@
+{
+    "name": "maiscrm/jd-openapi-php-sdk",
+    "description": "jd openapi SDK for PHP",
+    "keywords": [ "jd", "sdk" ],
+    "type": "library",
+    "license": "Apache-2.0",
+    "authors": [
+        {
+            "name": "Lorne Qi",
+            "homepage": "https://www.maiscrm.com/"
+        }
+    ],
+    "require": {
+        "php": ">=5.5.0"
+    },
+    "minimum-stability": "stable",
+    "autoload": {
+        "psr-4": {
+            "Jd\\": "jd/"
+        }
+    }
+}
