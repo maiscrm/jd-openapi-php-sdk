@@ -1,4 +1,6 @@
 <?php
+namespace Jd\request;
+
 class SellerVenderInfoGetRequest
 {
     private $apiParas = array();

@@ -1,4 +1,6 @@
 <?php
+namespace Jd;
+
 class JdClient
 {
     public $serverUrl = "https://api.jd.com/routerjson";

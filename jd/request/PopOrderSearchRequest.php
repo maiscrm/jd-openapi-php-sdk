@@ -1,4 +1,5 @@
 <?php
+namespace Jd\request;
 
 class PopOrderSearchRequest
 {
