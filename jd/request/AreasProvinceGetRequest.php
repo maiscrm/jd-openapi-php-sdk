@@ -1,14 +1,13 @@
 <?php
 namespace Jd\request;
 
-class SellerVenderInfoGetRequest
+class AreasProvinceGetRequest
 {
     private $apiParas = array();
-    private $extJsonParam;
 
     public function getApiMethodName()
     {
-        return "jingdong.seller.vender.info.get";
+        return "jingdong.areas.province.get";
     }
 
     public function getApiParas()
@@ -24,16 +23,5 @@ class SellerVenderInfoGetRequest
     {
         $this->apiParas[$key] = $value;
         $this->$key = $value;
-    }
-
-    public function setExtJsonParam($extJsonParam)
-    {
-        $this->extJsonParam = $extJsonParam;
-        $this->apiParas["ext_json_param"] = $extJsonParam;
-    }
-
-    public function getExtJsonParam()
-    {
-        return $this->extJsonParam;
     }
 }
