@@ -1,6 +1,8 @@
 <?php
 namespace Jd;
 
+use \Exception;
+
 class JdClient
 {
     public $serverUrl = "https://api.jd.com/routerjson";
@@ -65,9 +67,8 @@ class JdClient
             }
         }
         $reponse = curl_exec($ch);
-
         if (curl_errno($ch)) {
-            throw new \Exception(curl_error($ch),0);
+            throw new Exception(curl_error($ch),0);
         } else {
             $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (200 !== $httpStatusCode) {
@@ -96,7 +97,11 @@ class JdClient
         //签名
         $sysParams["sign"] = $this->generateSign($sysParams);
         //系统参数放入GET请求串
-        $requestUrl = $this->serverUrl . "?";
+        if (strpos($this->serverUrl, '?') !== false) {
+            $requestUrl = $this->serverUrl . "&";
+        } else {
+            $requestUrl = $this->serverUrl . "?";
+        }
         foreach ($sysParams as $sysParamKey => $sysParamValue) {
             $requestUrl .= "$sysParamKey=" . urlencode($sysParamValue) . "&";
         }
