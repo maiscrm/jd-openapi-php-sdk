@@ -1,7 +1,7 @@
 <?php
 namespace Jd\request;
 
-class Request
+class DeliveryCompanyRequest
 {
     private $apiParas = array();
     private $fields;
