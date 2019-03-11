@@ -2,6 +2,9 @@
 namespace Jd;
 
 use \Exception;
+use Yii;
+use yii\helpers\FileHelper;
+use yii\helpers\Json;
 
 class JdClient
 {
@@ -63,20 +66,21 @@ class JdClient
             if ($postMultipart) {
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $postFields);
             } else {
-                curl_setopt($ch, CURLOPT_POSTFIELDS, substr($postBodyString,0,-1));
+                curl_setopt($ch, CURLOPT_POSTFIELDS, substr($postBodyString, 0, -1));
             }
         }
-        $reponse = curl_exec($ch);
+        $response = curl_exec($ch);
+        $this->recordAccessOutLog($ch, 'POST', $url, $response, $postFields, ['logResponse' => true]);
         if (curl_errno($ch)) {
-            throw new Exception(curl_error($ch),0);
+            throw new Exception(curl_error($ch), 0);
         } else {
             $httpStatusCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             if (200 !== $httpStatusCode) {
-                throw new Exception($reponse,$httpStatusCode);
+                throw new Exception($response, $httpStatusCode);
             }
         }
         curl_close($ch);
-        return $reponse;
+        return $response;
     }
 
     public function execute($request, $access_token = null)
@@ -133,7 +137,6 @@ class JdClient
 
         //返回的HTTP文本不是标准JSON或者XML，记下错误日志
         if (false === $respWellFormed) {
-            $this->logCommunicationError($sysParams["method"],$requestUrl,"HTTP_RESPONSE_NOT_WELL_FORMED",$resp);
             $result->code = 0;
             $result->msg = "HTTP_RESPONSE_NOT_WELL_FORMED";
             return $result;
@@ -168,5 +171,66 @@ class JdClient
             }
         }
         return $this->execute($req, $session);
+    }
+
+    private function recordAccessOutLog($ch, $method, $url, $content, $params, $options = [])
+    {
+        // 如果是跑test case的直接跳过
+        if (YII_ENV == 'test') {
+            return true;
+        }
+
+        $info = curl_getinfo($ch);
+        $message = [
+            'type' => 'accessOut',
+            'remoteAddr' => $info['primary_ip'],
+            'reqId' => defined('REQUEST_ID') ? REQUEST_ID : '00000000-0000-0000-0000-000000000000',
+            'scheme' => parse_url($url, PHP_URL_SCHEME),
+            'host' => parse_url($url, PHP_URL_HOST),
+            'port' => $info['primary_port'],
+            'method' => $method,
+            'url' => substr($url, strpos($url, parse_url($url, PHP_URL_PATH))),
+            'responseStatus' => $info['http_code'],
+            'responseTime' => floor($info['total_time'] * 1000), // 单位:毫秒
+            'others' => [
+                'contentType' => $info['content_type'],
+                'namelookupTime' => floor($info['namelookup_time'] * 1000),
+                'connectTime' => floor($info['connect_time'] * 1000),
+                'pretransferTime' => floor($info['pretransfer_time'] * 1000),
+                'starttransferTime' => floor($info['starttransfer_time'] * 1000),
+            ],
+        ];
+
+        if (!empty($params) && in_array($method, ['POST', 'PUT'])) {
+            $message['body'] = $params;
+        }
+
+        if (isset($options['logResponse']) && $options['logResponse']) {
+            $message['others']['responseBody'] = $content;
+        }
+
+        $encodedMessage = Json::encode($message) . "\n";
+
+        if (defined('DISABLE_ACCESS_OUT_LOG')) {
+            $logFile = Yii::$app->getRuntimePath() . '/logs/access-out.log';
+            $logPath = dirname($logFile);
+            if (!is_dir($logPath)) {
+                FileHelper::createDirectory($logPath, 0775, true);
+            }
+            $text = '[' . date('Y-m-d H:i:s', time()) . ']' . $encodedMessage;
+            $file = fopen($logFile, 'a');
+            fwrite($file, $text);
+            fclose($file);
+
+            return true;
+        }
+
+        if (PHP_SAPI === 'cli') {
+            echo $encodedMessage;
+        } else {
+            file_put_contents('/var/run/phplog', $encodedMessage);
+        }
+
+        return true;
     }
 }
